@@ -5,10 +5,29 @@ from openai import OpenAI
 
 st.set_page_config(page_title="Camanda LMS AI Agent", page_icon="🎓", layout="wide")
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    st.error("❌ OpenAI API key not found. Please add it in Streamlit Secrets.")
+    st.stop()
 
-with open("courses.json") as f:
-    lms_data = json.load(f)
+client = OpenAI(api_key=api_key)
+
+@st.cache_data
+def load_lms_data():
+    with open("courses.json") as f:
+        return json.load(f)
+
+lms_data = load_lms_data()
+
+def camanda_context():
+    return {
+        "role": "system",
+        "content": (
+            "You are an AI Agent in Camanda Academy's LMS. "
+            "Here is the LMS data (courses, assignments, schedules, onboarding):\n\n"
+            f"{json.dumps(lms_data, indent=2)}"
+        )
+    }
 
 if st.sidebar.button("🔄 Reset Onboarding"):
     if "onboarded" in st.session_state:
@@ -30,7 +49,7 @@ if "onboarded" not in st.session_state:
         st.session_state["onboarded"] = True
         st.rerun()
 
-    st.stop()  
+    st.stop()
 
 col1, col2 = st.columns([4, 1])
 with col1:
@@ -85,45 +104,49 @@ user_input = st.chat_input(config["prompt"])
 
 if user_input:
     st.session_state[config["state_key"]].append({"role": "user", "content": user_input})
-    reply = None
-    lower_msg = user_input.lower()
-
-    if agent_choice == "Tutor Assistant":
-        if "assignment" in lower_msg:
-            assignments = []
-            for course in lms_data["courses"]:
-                for a in course["assignments"]:
-                    assignments.append(f"**{course['name']}**: {a['title']} (📅 Due {a['due']})")
-            reply = "Here are your assignments:\n\n" + "\n".join(assignments)
-
-        elif "schedule" in lower_msg or "class" in lower_msg:
-            schedule = []
-            for course in lms_data["courses"]:
-                for s in course["schedule"]:
-                    schedule.append(f"**{course['name']}**: {s['day']} at {s['time']}")
-            reply = "Here’s your schedule:\n\n" + "\n".join(schedule)
-
-    if agent_choice == "Study Buddy" and "quiz" in lower_msg:
-        quizzes = []
-        for course in lms_data["courses"]:
-            quizzes.append(f"**{course['name']}**:")
-            for t in course["topics"]:
-                quizzes.append(f"- What do you know about *{t}*?")
-        reply = "Here’s a quiz for you:\n\n" + "\n".join(quizzes)
-
-    if reply is None:
-        messages = [
-            {"role": "system", "content": config["system_message"]},
-        ]
-        messages.extend(st.session_state[config["state_key"]]) 
-        messages.append({"role": "user", "content": user_input})
-
-        with st.spinner("Thinking... 🤔"): 
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages
-            )
-        reply = response.choices[0].message.content
-
-    st.session_state[config["state_key"]].append({"role": "assistant", "content": reply})
     st.rerun()
+
+if st.session_state[config["state_key"]]:
+    last_msg = st.session_state[config["state_key"]][-1]
+
+    if last_msg["role"] == "user":
+        reply = None
+        lower_msg = last_msg["content"].lower()
+
+        if agent_choice == "Tutor Assistant":
+            if "assignment" in lower_msg:
+                assignments = []
+                for course in lms_data["courses"]:
+                    for a in course["assignments"]:
+                        assignments.append(f"**{course['name']}**: {a['title']} (📅 Due {a['due']})")
+                reply = "Here are your assignments:\n\n" + "\n".join(assignments)
+
+            elif "schedule" in lower_msg or "class" in lower_msg:
+                schedule = []
+                for course in lms_data["courses"]:
+                    for s in course["schedule"]:
+                        schedule.append(f"**{course['name']}**: {s['day']} at {s['time']}")
+                reply = "Here’s your schedule:\n\n" + "\n".join(schedule)
+
+        if agent_choice == "Study Buddy" and "quiz" in lower_msg:
+            quizzes = []
+            for course in lms_data["courses"]:
+                quizzes.append(f"**{course['name']}**:")
+                for t in course["topics"]:
+                    quizzes.append(f"- What do you know about *{t}*?")
+            reply = "Here’s a quiz for you:\n\n" + "\n".join(quizzes)
+
+        if reply is None:
+            messages = [camanda_context()] 
+            messages.append({"role": "system", "content": config["system_message"]})
+            messages.extend(st.session_state[config["state_key"]])
+
+            with st.spinner("Thinking... 🤔"):
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=messages
+                )
+            reply = response.choices[0].message.content
+
+        st.session_state[config["state_key"]].append({"role": "assistant", "content": reply})
+        st.rerun()

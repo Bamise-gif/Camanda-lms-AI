@@ -30,7 +30,7 @@ if "onboarded" not in st.session_state:
         st.session_state["onboarded"] = True
         st.rerun()
 
-    st.stop()
+    st.stop()  
 
 col1, col2 = st.columns([4, 1])
 with col1:
@@ -46,98 +46,84 @@ agent_choice = st.sidebar.radio(
     ["Tutor Assistant", "Study Buddy", "Admin Helper"]
 )
 
-def camanda_context():
-    """Turn courses.json into a text context string for the AI."""
-    context = "Here is Camanda LMS data:\n"
-    for course in lms_data.get("courses", []):
-        context += f"\n📘 Course: {course['name']}\n"
-        if "assignments" in course:
-            for a in course["assignments"]:
-                context += f"- Assignment: {a['title']} (Due {a['due']})\n"
-        if "schedule" in course:
-            for s in course["schedule"]:
-                context += f"- Schedule: {s['day']} at {s['time']}\n"
-        if "topics" in course:
-            context += "- Topics: " + ", ".join(course["topics"]) + "\n"
-    return context
+agent_configs = {
+    "Tutor Assistant": {
+        "state_key": "tutor_chat",
+        "header": "📘 Tutor Assistant",
+        "caption": "Ask me about assignments, schedules, or study materials.",
+        "prompt": "Ask your Tutor Assistant...",
+        "system_message": "You are a helpful Tutor Assistant in Camanda LMS."
+    },
+    "Study Buddy": {
+        "state_key": "buddy_chat",
+        "header": "🤝 Study Buddy",
+        "caption": "I’m your friendly study partner. I’ll motivate you and quiz you.",
+        "prompt": "Chat with your Study Buddy...",
+        "system_message": "You are a friendly Study Buddy. Motivate learners and quiz them."
+    },
+    "Admin Helper": {
+        "state_key": "admin_chat",
+        "header": "⚙️ Admin Helper",
+        "caption": "I help with LMS admin tasks (managing courses, users, etc.).",
+        "prompt": "Ask Admin Helper...",
+        "system_message": "You are the LMS Admin Helper. Give clear, structured answers."
+    }
+}
 
-if agent_choice == "Tutor Assistant":
-    st.header("📘 Tutor Assistant")
-    st.caption("Ask me about assignments, schedules, or study materials.")
+config = agent_configs[agent_choice]
 
-    if "tutor_chat" not in st.session_state:
-        st.session_state["tutor_chat"] = []
+st.header(config["header"])
+st.caption(config["caption"])
 
-    for msg in st.session_state["tutor_chat"]:
-        st.chat_message(msg["role"]).markdown(msg["content"])
+if config["state_key"] not in st.session_state:
+    st.session_state[config["state_key"]] = []
 
-    user_input = st.chat_input("Ask your Tutor Assistant...")
-    if user_input:
-        st.session_state["tutor_chat"].append({"role": "user", "content": user_input})
+for msg in st.session_state[config["state_key"]]:
+    st.chat_message(msg["role"]).markdown(msg["content"])
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a helpful Tutor Assistant in Camanda LMS. Use the knowledge provided when possible."},
-                {"role": "system", "content": camanda_context()},
-                {"role": "user", "content": user_input}
-            ]
-        )
+user_input = st.chat_input(config["prompt"])
+
+if user_input:
+    st.session_state[config["state_key"]].append({"role": "user", "content": user_input})
+    reply = None
+    lower_msg = user_input.lower()
+
+    if agent_choice == "Tutor Assistant":
+        if "assignment" in lower_msg:
+            assignments = []
+            for course in lms_data["courses"]:
+                for a in course["assignments"]:
+                    assignments.append(f"**{course['name']}**: {a['title']} (📅 Due {a['due']})")
+            reply = "Here are your assignments:\n\n" + "\n".join(assignments)
+
+        elif "schedule" in lower_msg or "class" in lower_msg:
+            schedule = []
+            for course in lms_data["courses"]:
+                for s in course["schedule"]:
+                    schedule.append(f"**{course['name']}**: {s['day']} at {s['time']}")
+            reply = "Here’s your schedule:\n\n" + "\n".join(schedule)
+
+    if agent_choice == "Study Buddy" and "quiz" in lower_msg:
+        quizzes = []
+        for course in lms_data["courses"]:
+            quizzes.append(f"**{course['name']}**:")
+            for t in course["topics"]:
+                quizzes.append(f"- What do you know about *{t}*?")
+        reply = "Here’s a quiz for you:\n\n" + "\n".join(quizzes)
+
+    if reply is None:
+        messages = [
+            {"role": "system", "content": config["system_message"]},
+        ]
+        messages.extend(st.session_state[config["state_key"]]) 
+        messages.append({"role": "user", "content": user_input})
+
+        with st.spinner("Thinking... 🤔"): 
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages
+            )
         reply = response.choices[0].message.content
 
-        st.session_state["tutor_chat"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-elif agent_choice == "Study Buddy":
-    st.header("🤝 Study Buddy")
-    st.caption("I’m your friendly study partner. I’ll motivate you and quiz you.")
-
-    if "buddy_chat" not in st.session_state:
-        st.session_state["buddy_chat"] = []
-
-    for msg in st.session_state["buddy_chat"]:
-        st.chat_message(msg["role"]).markdown(msg["content"])
-
-    user_input = st.chat_input("Chat with your Study Buddy...")
-    if user_input:
-        st.session_state["buddy_chat"].append({"role": "user", "content": user_input})
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a friendly Study Buddy. Motivate learners and quiz them. Use the Camanda LMS data when useful."},
-                {"role": "system", "content": camanda_context()},
-                {"role": "user", "content": user_input}
-            ]
-        )
-        reply = response.choices[0].message.content
-
-        st.session_state["buddy_chat"].append({"role": "assistant", "content": reply})
-        st.rerun()
-
-elif agent_choice == "Admin Helper":
-    st.header("⚙️ Admin Helper")
-    st.caption("I help with LMS admin tasks (managing courses, users, etc.).")
-
-    if "admin_chat" not in st.session_state:
-        st.session_state["admin_chat"] = []
-
-    for msg in st.session_state["admin_chat"]:
-        st.chat_message(msg["role"]).markdown(msg["content"])
-
-    user_input = st.chat_input("Ask Admin Helper...")
-    if user_input:
-        st.session_state["admin_chat"].append({"role": "user", "content": user_input})
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are the LMS Admin Helper. Give clear, structured answers, and use Camanda knowledge when useful."},
-                {"role": "system", "content": camanda_context()},
-                {"role": "user", "content": user_input}
-            ]
-        )
-        reply = response.choices[0].message.content
-
-        st.session_state["admin_chat"].append({"role": "assistant", "content": reply})
-        st.rerun()
+    st.session_state[config["state_key"]].append({"role": "assistant", "content": reply})
+    st.rerun()

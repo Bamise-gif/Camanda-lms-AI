@@ -1,0 +1,65 @@
+{
+  "onboarding": {
+    "steps": [
+      "Complete your profile",
+      "Take a placement quiz",
+      "Watch your first lesson",
+      "Say hello in the community chat"
+    ]
+  },
+  "admin": {
+    "enrollment_status": "Active",
+    "payment_history": [
+      { "date": "2025-01-15", "amount": "$100", "status": "Paid" },
+      { "date": "2025-04-10", "amount": "$100", "status": "Pending" }
+    ],
+    "support": [
+      "Contact your course admin at support@camanda.com",
+      "Office hours: Mon–Fri, 9am–5pm"
+    ]
+  },
+  "study_buddy": {
+    "quiz": [
+      {
+        "question": "What is 2 + 2?",
+        "options": ["3", "4", "5"],
+        "answer": "4"
+      },
+      {
+        "question": "What is the capital of France?",
+        "options": ["Paris", "London", "Berlin"],
+        "answer": "Paris"
+      },
+      {
+        "question": "In Python, what keyword is used to define a function?",
+        "options": ["func", "def", "lambda"],
+        "answer": "def"
+      }
+    ]
+  },
+  "courses": [
+    {
+      "name": "Math 101",
+      "assignments": [
+        { "title": "Algebra Homework", "due": "2025-09-28" },
+        { "title": "Geometry Quiz", "due": "2025-10-05" }
+      ],
+      "schedule": [
+        { "day": "Monday", "time": "10:00 AM" },
+        { "day": "Wednesday", "time": "2:00 PM" }
+      ],
+      "topics": ["Algebra", "Geometry", "Trigonometry"]
+    },
+    {
+      "name": "History 202",
+      "assignments": [
+        { "title": "Essay on WW2", "due": "2025-09-30" }
+      ],
+      "schedule": [
+        { "day": "Tuesday", "time": "1:00 PM" },
+        { "day": "Thursday", "time": "3:00 PM" }
+      ],
+      "topics": ["World War I", "World War II", "Cold War"]
+    }
+  ]
+}

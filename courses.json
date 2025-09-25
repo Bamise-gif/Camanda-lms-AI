@@ -1,65 +1,78 @@
 {
-  "onboarding": {
-    "steps": [
-      "Complete your profile",
-      "Take a placement quiz",
-      "Watch your first lesson",
-      "Say hello in the community chat"
-    ]
-  },
   "admin": {
     "enrollment_status": "Active",
     "payment_history": [
-      { "date": "2025-01-15", "amount": "$100", "status": "Paid" },
-      { "date": "2025-04-10", "amount": "$100", "status": "Pending" }
+      { "date": "2025-01-15", "amount": "$200", "status": "Paid" },
+      { "date": "2025-04-10", "amount": "$200", "status": "Pending" }
     ],
     "support": [
-      "Contact your course admin at support@camanda.com",
-      "Office hours: Mon–Fri, 9am–5pm"
+      "Contact Camanda Academy at academy@camanda.com",
+      "Office hours: Mon–Sat, 9am–6pm"
     ]
   },
   "study_buddy": {
     "quiz": [
       {
-        "question": "What is 2 + 2?",
-        "options": ["3", "4", "5"],
-        "answer": "4"
+        "question": "Which programming language is commonly used for web development at Camanda Academy?",
+        "options": ["Python", "JavaScript", "C++"],
+        "answer": "JavaScript"
       },
       {
-        "question": "What is the capital of France?",
-        "options": ["Paris", "London", "Berlin"],
-        "answer": "Paris"
+        "question": "What software is taught at Camanda Academy for business analytics?",
+        "options": ["Power BI", "Photoshop", "AutoCAD"],
+        "answer": "Power BI"
       },
       {
-        "question": "In Python, what keyword is used to define a function?",
-        "options": ["func", "def", "lambda"],
-        "answer": "def"
+        "question": "Which framework is used for building mobile apps at Camanda Academy?",
+        "options": ["React Native", "Django", "Flutter"],
+        "answer": "React Native"
       }
     ]
   },
   "courses": [
     {
-      "name": "Math 101",
+      "name": "Web Development",
       "assignments": [
-        { "title": "Algebra Homework", "due": "2025-09-28" },
-        { "title": "Geometry Quiz", "due": "2025-10-05" }
+        { "title": "Build a Personal Portfolio Website", "due": "2025-09-28" },
+        { "title": "JavaScript DOM Project", "due": "2025-10-05" }
       ],
       "schedule": [
         { "day": "Monday", "time": "10:00 AM" },
         { "day": "Wednesday", "time": "2:00 PM" }
       ],
-      "topics": ["Algebra", "Geometry", "Trigonometry"]
+      "topics": ["HTML", "CSS", "JavaScript", "React"]
     },
     {
-      "name": "History 202",
+      "name": "Mobile App Development",
       "assignments": [
-        { "title": "Essay on WW2", "due": "2025-09-30" }
+        { "title": "Create a To-Do App in React Native", "due": "2025-09-30" }
       ],
       "schedule": [
         { "day": "Tuesday", "time": "1:00 PM" },
         { "day": "Thursday", "time": "3:00 PM" }
       ],
-      "topics": ["World War I", "World War II", "Cold War"]
+      "topics": ["React Native", "UI Design", "Firebase"]
+    },
+    {
+      "name": "Data Analytics with Power BI",
+      "assignments": [
+        { "title": "Build Sales Dashboard in Power BI", "due": "2025-10-07" }
+      ],
+      "schedule": [
+        { "day": "Friday", "time": "11:00 AM" },
+        { "day": "Saturday", "time": "1:00 PM" }
+      ],
+      "topics": ["Data Cleaning", "DAX", "Visualizations", "Reports"]
+    },
+    {
+      "name": "Artificial Intelligence",
+      "assignments": [
+        { "title": "Train a Simple Chatbot", "due": "2025-10-12" }
+      ],
+      "schedule": [
+        { "day": "Saturday", "time": "4:00 PM" }
+      ],
+      "topics": ["Machine Learning", "AI Agents", "Prompt Engineering"]
     }
   ]
 }

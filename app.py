@@ -1,5 +1,6 @@
-import streamlit as st
+import streamlit as st 
 import json
+import os
 from openai import OpenAI
 
 # ======================
@@ -7,8 +8,8 @@ from openai import OpenAI
 # ======================
 st.set_page_config(page_title="Camanda LMS AI Agent", page_icon="🎓", layout="wide")
 
-# ✅ Replace with your OpenAI API key
-client = OpenAI(api_key="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")
+# Load API key from environment variable
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # ✅ Load LMS data (assignments, quizzes, onboarding, etc.)
 with open("courses.json") as f:
@@ -45,8 +46,6 @@ if "onboarded" not in st.session_state:
 # ======================
 # MAIN DASHBOARD UI
 # ======================
-
-# Top bar with user + logout
 col1, col2 = st.columns([4, 1])
 with col1:
     st.markdown("### 🎓 Camanda LMS AI Agent - Welcome, **Emmanuel**")
@@ -55,13 +54,30 @@ with col2:
         st.session_state.clear()
         st.rerun()
 
-
 # Sidebar menu
-st.sidebar.title("AI Agent Dashboard")
+st.sidebar.title("Dashboard")
 agent_choice = st.sidebar.radio(
     "Choose an Agent:",
     ["Tutor Assistant", "Study Buddy", "Admin Helper"]
 )
+
+# ======================
+# HELPER: Camanda Knowledge
+# ======================
+def camanda_context():
+    """Turn courses.json into a text context string for the AI."""
+    context = "Here is Camanda LMS data:\n"
+    for course in lms_data.get("courses", []):
+        context += f"\n📘 Course: {course['name']}\n"
+        if "assignments" in course:
+            for a in course["assignments"]:
+                context += f"- Assignment: {a['title']} (Due {a['due']})\n"
+        if "schedule" in course:
+            for s in course["schedule"]:
+                context += f"- Schedule: {s['day']} at {s['time']}\n"
+        if "topics" in course:
+            context += "- Topics: " + ", ".join(course["topics"]) + "\n"
+    return context
 
 # ======================
 # PAGE: Tutor Assistant
@@ -79,32 +95,17 @@ if agent_choice == "Tutor Assistant":
     user_input = st.chat_input("Ask your Tutor Assistant...")
     if user_input:
         st.session_state["tutor_chat"].append({"role": "user", "content": user_input})
-        reply = None
-        lower_msg = user_input.lower()
 
-        if "assignment" in lower_msg:
-            assignments = []
-            for course in lms_data["courses"]:
-                for a in course["assignments"]:
-                    assignments.append(f"**{course['name']}**: {a['title']} (📅 Due {a['due']})")
-            reply = "Here are your assignments:\n\n" + "\n".join(assignments)
-
-        elif "schedule" in lower_msg or "class" in lower_msg:
-            schedule = []
-            for course in lms_data["courses"]:
-                for s in course["schedule"]:
-                    schedule.append(f"**{course['name']}**: {s['day']} at {s['time']}")
-            reply = "Here’s your schedule:\n\n" + "\n".join(schedule)
-
-        else:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a helpful Tutor Assistant in Camanda LMS."},
-                    {"role": "user", "content": user_input}
-                ]
-            )
-            reply = response.choices[0].message.content
+        # Use Camanda context + ChatGPT
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful Tutor Assistant in Camanda LMS. Use the knowledge provided when possible."},
+                {"role": "system", "content": camanda_context()},
+                {"role": "user", "content": user_input}
+            ]
+        )
+        reply = response.choices[0].message.content
 
         st.session_state["tutor_chat"].append({"role": "assistant", "content": reply})
         st.rerun()
@@ -125,24 +126,17 @@ elif agent_choice == "Study Buddy":
     user_input = st.chat_input("Chat with your Study Buddy...")
     if user_input:
         st.session_state["buddy_chat"].append({"role": "user", "content": user_input})
-        reply = None
 
-        if "quiz" in user_input.lower():
-            quizzes = []
-            for course in lms_data["courses"]:
-                quizzes.append(f"**{course['name']}**:")
-                for t in course["topics"]:
-                    quizzes.append(f"- What do you know about *{t}*?")
-            reply = "Here’s a quiz for you:\n\n" + "\n".join(quizzes)
-        else:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a friendly Study Buddy. Motivate learners and quiz them."},
-                    {"role": "user", "content": user_input}
-                ]
-            )
-            reply = response.choices[0].message.content
+        # Use Camanda context + ChatGPT
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a friendly Study Buddy. Motivate learners and quiz them. Use the Camanda LMS data when useful."},
+                {"role": "system", "content": camanda_context()},
+                {"role": "user", "content": user_input}
+            ]
+        )
+        reply = response.choices[0].message.content
 
         st.session_state["buddy_chat"].append({"role": "assistant", "content": reply})
         st.rerun()
@@ -164,10 +158,12 @@ elif agent_choice == "Admin Helper":
     if user_input:
         st.session_state["admin_chat"].append({"role": "user", "content": user_input})
 
+        # Use Camanda context + ChatGPT
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are the LMS Admin Helper. Give clear, structured answers."},
+                {"role": "system", "content": "You are the LMS Admin Helper. Give clear, structured answers, and use Camanda knowledge when useful."},
+                {"role": "system", "content": camanda_context()},
                 {"role": "user", "content": user_input}
             ]
         )

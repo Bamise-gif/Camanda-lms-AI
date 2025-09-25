@@ -3,29 +3,18 @@ import json
 import os
 from openai import OpenAI
 
-# ======================
-# CONFIG & SETUP
-# ======================
 st.set_page_config(page_title="Camanda LMS AI Agent", page_icon="🎓", layout="wide")
 
-# Load API key from environment variable
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# ✅ Load LMS data (assignments, quizzes, onboarding, etc.)
 with open("courses.json") as f:
     lms_data = json.load(f)
 
-# ======================
-# RESET ONBOARDING BUTTON
-# ======================
 if st.sidebar.button("🔄 Reset Onboarding"):
     if "onboarded" in st.session_state:
         del st.session_state["onboarded"]
     st.rerun()
 
-# ======================
-# HANDLE ONBOARDING FLOW
-# ======================
 if "onboarded" not in st.session_state:
     st.title("👋 Welcome to Camanda LMS!")
     st.write("Since this is your first time here, let’s get you started with onboarding.")
@@ -41,11 +30,8 @@ if "onboarded" not in st.session_state:
         st.session_state["onboarded"] = True
         st.rerun()
 
-    st.stop()  # don’t load dashboard until onboarding is done
+    st.stop()
 
-# ======================
-# MAIN DASHBOARD UI
-# ======================
 col1, col2 = st.columns([4, 1])
 with col1:
     st.markdown("### 🎓 Camanda LMS AI Agent - Welcome, **Emmanuel**")
@@ -54,16 +40,12 @@ with col2:
         st.session_state.clear()
         st.rerun()
 
-# Sidebar menu
 st.sidebar.title("Dashboard")
 agent_choice = st.sidebar.radio(
     "Choose an Agent:",
     ["Tutor Assistant", "Study Buddy", "Admin Helper"]
 )
 
-# ======================
-# HELPER: Camanda Knowledge
-# ======================
 def camanda_context():
     """Turn courses.json into a text context string for the AI."""
     context = "Here is Camanda LMS data:\n"
@@ -79,9 +61,6 @@ def camanda_context():
             context += "- Topics: " + ", ".join(course["topics"]) + "\n"
     return context
 
-# ======================
-# PAGE: Tutor Assistant
-# ======================
 if agent_choice == "Tutor Assistant":
     st.header("📘 Tutor Assistant")
     st.caption("Ask me about assignments, schedules, or study materials.")
@@ -96,7 +75,6 @@ if agent_choice == "Tutor Assistant":
     if user_input:
         st.session_state["tutor_chat"].append({"role": "user", "content": user_input})
 
-        # Use Camanda context + ChatGPT
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -110,9 +88,6 @@ if agent_choice == "Tutor Assistant":
         st.session_state["tutor_chat"].append({"role": "assistant", "content": reply})
         st.rerun()
 
-# ======================
-# PAGE: Study Buddy
-# ======================
 elif agent_choice == "Study Buddy":
     st.header("🤝 Study Buddy")
     st.caption("I’m your friendly study partner. I’ll motivate you and quiz you.")
@@ -127,7 +102,6 @@ elif agent_choice == "Study Buddy":
     if user_input:
         st.session_state["buddy_chat"].append({"role": "user", "content": user_input})
 
-        # Use Camanda context + ChatGPT
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -141,9 +115,6 @@ elif agent_choice == "Study Buddy":
         st.session_state["buddy_chat"].append({"role": "assistant", "content": reply})
         st.rerun()
 
-# ======================
-# PAGE: Admin Helper
-# ======================
 elif agent_choice == "Admin Helper":
     st.header("⚙️ Admin Helper")
     st.caption("I help with LMS admin tasks (managing courses, users, etc.).")
@@ -158,7 +129,6 @@ elif agent_choice == "Admin Helper":
     if user_input:
         st.session_state["admin_chat"].append({"role": "user", "content": user_input})
 
-        # Use Camanda context + ChatGPT
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[

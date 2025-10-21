@@ -3,7 +3,7 @@ import json
 import os
 from openai import OpenAI
 
-st.set_page_config(page_title="Camanda LMS AI Agent", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="Camanda LMS", page_icon="🎓", layout="wide")
 
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
@@ -29,162 +29,155 @@ def camanda_context():
         )
     }
 
-if st.sidebar.button("🔄 Reset Onboarding"):
-    if "onboarded" in st.session_state:
-        del st.session_state["onboarded"]
-    st.rerun()
-
-if "onboarded" not in st.session_state:
-    st.title("👋 Welcome to Camanda LMS!")
-    st.write("Since this is your first time here, let’s get you started with onboarding.")
-
-    if "onboarding" in lms_data:
-        st.subheader("Your Onboarding Checklist")
-        for step in lms_data["onboarding"]["steps"]:
-            st.checkbox(step, value=False, disabled=True)
-
-        st.info("✅ Complete these steps to get familiar with Camanda LMS!")
-
-    if st.button("Continue to Dashboard ➡️"):
-        st.session_state["onboarded"] = True
-        st.rerun()
-
-    st.stop()
-
+# ===========================
+# MAIN DASHBOARD LAYOUT
+# ===========================
 col1, col2 = st.columns([4, 1])
 with col1:
-    st.markdown("### 🎓 Camanda LMS AI Agent - Welcome, **Emmanuel**")
+    st.markdown("### 🎓 Camanda LMS Dashboard - Welcome, **Emmanuel**")
 with col2:
     if st.button("🚪 Logout"):
         st.session_state.clear()
         st.rerun()
 
-st.sidebar.title("Dashboard")
-agent_choice = st.sidebar.radio(
-    "Choose an Agent:",
-    ["Tutor Assistant", "Study Buddy", "Admin Helper", "Career Coach"]
+# ===========================
+# SIDEBAR MENU
+# ===========================
+st.sidebar.title("Navigation")
+menu_choice = st.sidebar.radio(
+    "Go to:",
+    ["Dashboard", "My Courses", "Assignments", "Progress", "Schedule", "Discussion", "Settings", "AI Mode"]
 )
 
-agent_configs = {
-    "Tutor Assistant": {
-        "state_key": "tutor_chat",
-        "header": "📘 Tutor Assistant",
-        "caption": "Ask me about assignments, schedules, or study materials.",
-        "prompt": "Ask your Tutor Assistant...",
-        "system_message": "You are a helpful Tutor Assistant in Camanda LMS."
-    },
-    "Study Buddy": {
-        "state_key": "buddy_chat",
-        "header": "🤝 Study Buddy",
-        "caption": "I’m your friendly study partner. I’ll motivate you and quiz you.",
-        "prompt": "Chat with your Study Buddy...",
-        "system_message": "You are a friendly Study Buddy. Motivate learners and quiz them."
-    },
-    "Admin Helper": {
-        "state_key": "admin_chat",
-        "header": "⚙️ Admin Helper",
-        "caption": "I help with LMS admin tasks (managing courses, users, etc.).",
-        "prompt": "Ask Admin Helper...",
-        "system_message": "You are the LMS Admin Helper. Give clear, structured answers."
-    },
-    "Career Coach": {  
-        "state_key": "career_chat",
-        "header": "💼 Career Coach",
-        "caption": "Ask me for career guidance, skills advice, and course recommendations.",
-        "prompt": "Ask your Career Coach...",
-        "system_message": "You are a Career Coach. Give practical, encouraging advice and recommend courses/skills based on user goals."
-    }
-}
+# ===========================
+# DASHBOARD TAB
+# ===========================
+if menu_choice == "Dashboard":
+    st.header("📊 Dashboard Overview")
 
-config = agent_configs[agent_choice]
+    tab1, tab2, tab3, tab4 = st.tabs(["Active Courses", "Assignments Due", "Learning Hours", "AI Recommendations"])
 
-st.header(config["header"])
-st.caption(config["caption"])
+    with tab1:
+        st.subheader("Your Active Courses")
+        for course in lms_data.get("courses", []):
+            st.write(f"- **{course['name']}** ({len(course['topics'])} topics)")
 
-if config["state_key"] not in st.session_state:
-    st.session_state[config["state_key"]] = [
-        {"role": "assistant", "content": "👋 Welcome to Camanda LMS AI! How can I help you today?"}
-    ]
+    with tab2:
+        st.subheader("Assignments Due")
+        for course in lms_data.get("courses", []):
+            for a in course["assignments"]:
+                st.write(f"- **{a['title']}** for {course['name']} (📅 Due: {a['due']})")
 
-for msg in st.session_state[config["state_key"]]:
-    if msg["role"] == "user":
-        st.chat_message("user", avatar="👨‍💻").write(msg["content"])
-    else:
-        st.chat_message("assistant", avatar="🤖").write(msg["content"])
+    with tab3:
+        st.subheader("Learning Hours Summary")
+        st.info("📈 You’ve logged approximately 25 learning hours this month.")
 
-user_input = st.chat_input(config["prompt"])
+    with tab4:
+        st.subheader("AI Recommendations")
+        st.write("🤖 Based on your activity, here are some suggested next steps:")
+        st.markdown("- Review your pending assignments.")
+        st.markdown("- Continue ‘Python for Beginners’ course.")
+        st.markdown("- Explore Data Visualization lessons in Power BI.")
 
-if user_input:
-    st.session_state[config["state_key"]].append({"role": "user", "content": user_input})
-    st.rerun()
+# ===========================
+# MY COURSES TAB
+# ===========================
+elif menu_choice == "My Courses":
+    st.header("📚 My Courses")
+    for course in lms_data.get("courses", []):
+        with st.expander(course["name"]):
+            st.write("**Topics:**", ", ".join(course["topics"]))
+            st.write("**Instructor:**", course.get("instructor", "N/A"))
+            st.write("**Schedule:**")
+            for s in course["schedule"]:
+                st.write(f"- {s['day']} at {s['time']}")
 
-if st.session_state[config["state_key"]]:
-    last_msg = st.session_state[config["state_key"]][-1]
+    st.info("💡 Tip: Click the button below to chat with AI about your courses.")
+    if st.button("💬 Open AI Mode for Interactive Learning"):
+        st.session_state["open_ai_mode"] = True
+        st.session_state["active_section"] = "Courses"
+        st.rerun()
 
-    if last_msg["role"] == "user":
-        reply = None
-        lower_msg = last_msg["content"].lower()
+# ===========================
+# ASSIGNMENTS TAB
+# ===========================
+elif menu_choice == "Assignments":
+    st.header("📝 Assignments")
+    for course in lms_data.get("courses", []):
+        st.subheader(course["name"])
+        for a in course["assignments"]:
+            st.write(f"- {a['title']} (📅 Due: {a['due']})")
+    st.info("💬 Need help? Open AI Mode to get explanations or summaries of assignments.")
 
-        if agent_choice == "Tutor Assistant":
-            if "assignment" in lower_msg:
-                assignments = []
-                for course in lms_data["courses"]:
-                    for a in course["assignments"]:
-                        assignments.append(f"**{course['name']}**: {a['title']} (📅 Due {a['due']})")
-                reply = "Here are your assignments:\n\n" + "\n".join(assignments)
+# ===========================
+# PROGRESS TAB
+# ===========================
+elif menu_choice == "Progress":
+    st.header("📈 Learning Progress")
+    st.write("Here’s a summary of your learning achievements so far:")
+    st.progress(0.68)
+    st.write("✅ You’ve completed 68% of your active courses.")
+    st.info("💬 Open AI Mode to get personalized improvement tips.")
 
-            elif "schedule" in lower_msg or "class" in lower_msg:
-                schedule = []
-                for course in lms_data["courses"]:
-                    for s in course["schedule"]:
-                        schedule.append(f"**{course['name']}**: {s['day']} at {s['time']}")
-                reply = "Here’s your schedule:\n\n" + "\n".join(schedule)
+# ===========================
+# SCHEDULE TAB
+# ===========================
+elif menu_choice == "Schedule":
+    st.header("📅 Class Schedule")
+    for course in lms_data.get("courses", []):
+        for s in course["schedule"]:
+            st.write(f"**{course['name']}**: {s['day']} at {s['time']}")
+    st.info("💬 Ask AI for reminders or scheduling recommendations in AI Mode.")
 
-        if agent_choice == "Study Buddy" and "quiz" in lower_msg:
-            quizzes = []
-            for course in lms_data["courses"]:
-                quizzes.append(f"**{course['name']}**:")
-                for t in course["topics"]:
-                    quizzes.append(f"- What do you know about *{t}*?")
-            reply = "Here’s a quiz for you:\n\n" + "\n".join(quizzes)
+# ===========================
+# DISCUSSION TAB
+# ===========================
+elif menu_choice == "Discussion":
+    st.header("💬 Discussion Forum")
+    st.write("Join conversations, share ideas, and collaborate with classmates!")
+    st.info("💡 Tip: AI Mode can summarize or highlight key discussion points for you.")
 
-        if agent_choice == "Career Coach":
-            matched = []
-            for course in lms_data.get("courses", []):
-                course_text = (course.get("name", "") + " " + " ".join(course.get("topics", []))).lower()
-                if any(token in lower_msg for token in course_text.split()):
-                    matched.append(course)
+# ===========================
+# SETTINGS TAB
+# ===========================
+elif menu_choice == "Settings":
+    st.header("⚙️ Settings")
+    st.write("Manage your account, notifications, and preferences here.")
 
-            if matched:
-                recs = []
-                for c in matched:
-                    rec_line = f"**{c['name']}** — topics: {', '.join(c.get('topics', []))}."
-                    enrollment = c.get("enrollment", {}).get("steps") if c.get("enrollment") else None
-                    if enrollment:
-                        rec_line += f" Enrollment: {enrollment[0]} (see course page for full steps)."
-                    recs.append(rec_line)
-                reply = (
-                    "Based on what you said, here are some Camanda courses that look relevant:\n\n"
-                    + "\n".join(recs)
-                    + "\n\nIf you'd like, I can suggest which course to start with given your goals — tell me a bit about your career interests."
-                )
+# ===========================
+# AI MODE TAB (General Chat)
+# ===========================
+elif menu_choice == "AI Mode":
+    st.header("🤖 AI Mode - Interactive Learning Assistant")
+    st.caption("Chat with Camanda AI for explanations, guidance, and recommendations.")
 
+    # Initialize chat history
+    if "ai_chat" not in st.session_state:
+        st.session_state["ai_chat"] = [
+            {"role": "assistant", "content": "👋 Welcome to AI Mode! How can I help you today?"}
+        ]
+
+    # Expandable chat panel
+    with st.expander("🧠 Open AI Chat Panel", expanded=True):
+        for msg in st.session_state["ai_chat"]:
+            if msg["role"] == "user":
+                st.chat_message("user", avatar="👨‍💻").write(msg["content"])
             else:
-                messages = [camanda_context()]
-                messages.append({"role": "system", "content": config["system_message"]})
-                messages.extend(st.session_state[config["state_key"]])
+                st.chat_message("assistant", avatar="🤖").write(msg["content"])
 
-                with st.spinner("Thinking... 🤔"):
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=messages
-                    )
-                reply = response.choices[0].message.content
+        # Quick start suggestions
+        st.markdown("#### 💡 Quick Start Suggestions")
+        st.markdown("- Explain my assignment")
+        st.markdown("- Recommend a study plan")
+        st.markdown("- Suggest career paths")
+        st.markdown("- Help me understand a course topic")
 
-        if reply is None:
-            messages = [camanda_context()] 
-            messages.append({"role": "system", "content": config["system_message"]})
-            messages.extend(st.session_state[config["state_key"]])
+        user_input = st.chat_input("Ask Camanda AI anything...")
+
+        if user_input:
+            st.session_state["ai_chat"].append({"role": "user", "content": user_input})
+            messages = [camanda_context()]
+            messages.extend(st.session_state["ai_chat"])
 
             with st.spinner("Thinking... 🤔"):
                 response = client.chat.completions.create(
@@ -192,6 +185,5 @@ if st.session_state[config["state_key"]]:
                     messages=messages
                 )
             reply = response.choices[0].message.content
-
-        st.session_state[config["state_key"]].append({"role": "assistant", "content": reply})
-        st.rerun()
+            st.session_state["ai_chat"].append({"role": "assistant", "content": reply})
+            st.rerun()

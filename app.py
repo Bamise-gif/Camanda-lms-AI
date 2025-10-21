@@ -29,9 +29,6 @@ def camanda_context():
         )
     }
 
-# ===========================
-# MAIN DASHBOARD LAYOUT
-# ===========================
 col1, col2 = st.columns([4, 1])
 with col1:
     st.markdown("### 🎓 Camanda LMS Dashboard - Welcome, **Emmanuel**")
@@ -40,18 +37,12 @@ with col2:
         st.session_state.clear()
         st.rerun()
 
-# ===========================
-# SIDEBAR MENU
-# ===========================
 st.sidebar.title("Navigation")
 menu_choice = st.sidebar.radio(
     "Go to:",
     ["Dashboard", "My Courses", "Assignments", "Progress", "Schedule", "Discussion", "Settings", "AI Mode"]
 )
 
-# ===========================
-# DASHBOARD TAB
-# ===========================
 if menu_choice == "Dashboard":
     st.header("📊 Dashboard Overview")
 
@@ -79,9 +70,6 @@ if menu_choice == "Dashboard":
         st.markdown("- Continue ‘Python for Beginners’ course.")
         st.markdown("- Explore Data Visualization lessons in Power BI.")
 
-# ===========================
-# MY COURSES TAB
-# ===========================
 elif menu_choice == "My Courses":
     st.header("📚 My Courses")
     for course in lms_data.get("courses", []):
@@ -98,9 +86,6 @@ elif menu_choice == "My Courses":
         st.session_state["active_section"] = "Courses"
         st.rerun()
 
-# ===========================
-# ASSIGNMENTS TAB
-# ===========================
 elif menu_choice == "Assignments":
     st.header("📝 Assignments")
     for course in lms_data.get("courses", []):
@@ -109,9 +94,6 @@ elif menu_choice == "Assignments":
             st.write(f"- {a['title']} (📅 Due: {a['due']})")
     st.info("💬 Need help? Open AI Mode to get explanations or summaries of assignments.")
 
-# ===========================
-# PROGRESS TAB
-# ===========================
 elif menu_choice == "Progress":
     st.header("📈 Learning Progress")
     st.write("Here’s a summary of your learning achievements so far:")
@@ -119,9 +101,6 @@ elif menu_choice == "Progress":
     st.write("✅ You’ve completed 68% of your active courses.")
     st.info("💬 Open AI Mode to get personalized improvement tips.")
 
-# ===========================
-# SCHEDULE TAB
-# ===========================
 elif menu_choice == "Schedule":
     st.header("📅 Class Schedule")
     for course in lms_data.get("courses", []):
@@ -129,35 +108,24 @@ elif menu_choice == "Schedule":
             st.write(f"**{course['name']}**: {s['day']} at {s['time']}")
     st.info("💬 Ask AI for reminders or scheduling recommendations in AI Mode.")
 
-# ===========================
-# DISCUSSION TAB
-# ===========================
 elif menu_choice == "Discussion":
     st.header("💬 Discussion Forum")
     st.write("Join conversations, share ideas, and collaborate with classmates!")
     st.info("💡 Tip: AI Mode can summarize or highlight key discussion points for you.")
 
-# ===========================
-# SETTINGS TAB
-# ===========================
 elif menu_choice == "Settings":
     st.header("⚙️ Settings")
     st.write("Manage your account, notifications, and preferences here.")
 
-# ===========================
-# AI MODE TAB (General Chat)
-# ===========================
 elif menu_choice == "AI Mode":
     st.header("🤖 AI Mode - Interactive Learning Assistant")
     st.caption("Chat with Camanda AI for explanations, guidance, and recommendations.")
 
-    # Initialize chat history
     if "ai_chat" not in st.session_state:
         st.session_state["ai_chat"] = [
             {"role": "assistant", "content": "👋 Welcome to AI Mode! How can I help you today?"}
         ]
 
-    # Expandable chat panel
     with st.expander("🧠 Open AI Chat Panel", expanded=True):
         for msg in st.session_state["ai_chat"]:
             if msg["role"] == "user":
@@ -165,7 +133,6 @@ elif menu_choice == "AI Mode":
             else:
                 st.chat_message("assistant", avatar="🤖").write(msg["content"])
 
-        # Quick start suggestions
         st.markdown("#### 💡 Quick Start Suggestions")
         st.markdown("- Explain my assignment")
         st.markdown("- Recommend a study plan")
